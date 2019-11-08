@@ -15,7 +15,7 @@ ODOO_DB = os.getenv("DB")
 ODOO_HOST = os.getenv("HOST")
 ODOO_PORT = os.getenv("PORT")
 
-SECRET = os.getenv("SECRET")
+JWT_SECRET = os.getenv("SECRET")
 
 odoo = odoorpc.ODOO(ODOO_HOST, protocol='jsonrpc', port=ODOO_PORT)
 
@@ -51,26 +51,26 @@ def create_odoo_contact():
         exist_odoo_fields = {"company_type": "person"}
         #get key, values from data
         items = data.items()
-        decoded_token = jwt.decode(token, 'secret', ['HS256'])
-
+        
         try:
-            if decoded_token['target'] == "odoo":
-                for item_key, item_value in items:
-                    for key in odoo_contact_fields:
-                        if key == item_key:
-                            # add key:value to dict
-                            exist_odoo_fields.update({str(item_key): str(item_value)})
+            decoded_token = jwt.decode(token, JWT_SECRET, ['HS256'])
+        except jwt.exceptions.InvalidSignatureError as error:
+            logging.warning('Invalid token error. Error: %s', error)
+            return Response(status=401)
+        
+        if decoded_token['target'] == "odoo":
+            for item_key, item_value in items:
+                for key in odoo_contact_fields:
+                    if key == item_key:
+                        # add key:value to dict
+                        exist_odoo_fields.update({str(item_key): str(item_value)})
             print(exist_odoo_fields)
-
             try:
                 contact = odoo.env['res.partner']
                 # create contact from dict
                 contact.create(exist_odoo_fields)
             except odoorpc.error.RPCError as error:
                 logging.warning("Odoo rpc error! Error: %s", error)
-                return Response(status=500)                    
-        except KeyError:
-            logging.warning('Necessary field in key doesnt exist')
-            return Response(status=401)
+                return Response(status=500)    
 
-    return Response(status=401)
+    return Response(status=201)
