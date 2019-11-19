@@ -28,6 +28,10 @@ odoo_contact_fields = [
     'name', 'phone', 'mobile', 'email', 'street', 'street2', 'city', 'function', 'website', 'title'
     ]
 
+odoo_lead_fields = [
+    'name', 'partner_name', 'contact_name', 'street', 'street2', 'city', 'country', 'function', 'email_from', 'phone', 'mobile', 'team_id'
+]
+
 # try to login to odoo
 try:
     odoo.login(ODOO_DB, login=ODOO_LOGIN, password=ODOO_PASSWORD)
@@ -58,7 +62,7 @@ def create_odoo_contact():
             logging.warning('Invalid token error. Error: %s', error)
             return Response(status=401)
         
-        if decoded_token['target'] == "odoo":
+        if decoded_token:
             for item_key, item_value in items:
                 for key in odoo_contact_fields:
                     if key == item_key:
@@ -73,4 +77,45 @@ def create_odoo_contact():
                 logging.warning("Odoo rpc error! Error: %s", error)
                 return Response(status=500)    
 
+    return Response(status=201)
+
+@app.route("/create/lead", methods=["POST"])
+def create_odoo_lead():
+    """ Create lead in odoo. If  token is valid """
+    data = request.form
+
+    exist_odoo_fields = {}
+
+    token = data.get('token', (None))
+
+    if not token:
+        print("Token doesn't exist")
+        logging.warning("Token doesn't exist in request")
+        return Response(status=401)
+    else:
+        items = data.items()
+        
+        try:
+            decoded_token = jwt.decode(token, JWT_SECRET, ['HS256'])
+        except jwt.exceptions.InvalidSignatureError as error:
+            logging.warning('Invalid token error. Error: %s', error)
+            return Response(status=401)   
+
+        if decoded_token:
+            for item_key, item_value in items:
+                for key in odoo_lead_fields:
+                    if key == item_key:
+                        # add key:value to dict
+                        exist_odoo_fields.update({str(item_key): str(item_value)})
+                        print(key, item_value)
+
+            print(exist_odoo_fields)
+            try:
+                lead = odoo.env['crm.lead']
+                # create contact from dict
+                lead.create(exist_odoo_fields)
+            except odoorpc.error.RPCError as error:
+                logging.warning("Odoo rpc error! Error: %s", error)
+                return Response(status=500)  
+                 
     return Response(status=201)
