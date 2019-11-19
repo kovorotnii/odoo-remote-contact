@@ -38,10 +38,11 @@ try:
 except odoorpc.error.RPCError:
     logging.warning("Can't login successfully to odoo")
 
-# routing below
 @app.route('/create/contact', methods=["POST"])
 def create_odoo_contact():
     """ Create contact in odoo, if token is valid, in other case return 401 code """
+    logging.info("Get request for creating contact")
+
     data = request.form
 
     token = data.get('token', (None))
@@ -81,7 +82,9 @@ def create_odoo_contact():
 
 @app.route("/create/lead", methods=["POST"])
 def create_odoo_lead():
-    """ Create lead in odoo. If  token is valid """
+    """ Create lead in odoo. If token is valid """
+    logging.info("Get request for creating lead")
+    
     data = request.form
 
     exist_odoo_fields = {}
@@ -112,7 +115,7 @@ def create_odoo_lead():
             print(exist_odoo_fields)
             try:
                 lead = odoo.env['crm.lead']
-                # create contact from dict
+                # create lead from dict
                 lead.create(exist_odoo_fields)
             except odoorpc.error.RPCError as error:
                 logging.warning("Odoo rpc error! Error: %s", error)
