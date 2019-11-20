@@ -73,7 +73,7 @@ def create_new_entity(record):
                 logging.warning("Unknown odoo environment!")
                 return Response(status=401)
             elif current_env == odoo.env['res.partner']:
-                odoo_fields = {"company_type": "person"}
+                odoo_fields.update({"company_type": "person"})
 
                 print("total fields if contact", odoo_fields)
                 current_env.create(odoo_fields)
