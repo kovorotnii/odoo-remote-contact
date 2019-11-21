@@ -17,8 +17,6 @@ ODOO_PORT = os.getenv("PORT")
 
 JWT_SECRET = os.getenv("SECRET")
 
-odoo = odoorpc.ODOO(ODOO_HOST, protocol='jsonrpc', port=ODOO_PORT)
-
 logging.basicConfig(filename='app.log', filemode='w',
                     format='%(asctime)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 
@@ -37,6 +35,7 @@ def create_new_entity(record):
     """ Create new entity which depends on request record variable """
     # try to login to odoo
     try:
+        odoo = odoorpc.ODOO(ODOO_HOST, protocol='jsonrpc', port=ODOO_PORT)
         odoo.login(ODOO_DB, login=ODOO_LOGIN, password=ODOO_PASSWORD)
     except odoorpc.error.RPCError:
         logging.warning("Can't login successfully to odoo")
