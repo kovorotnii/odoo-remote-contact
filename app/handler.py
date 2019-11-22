@@ -1,6 +1,7 @@
 """ middleware for odoo and portal """
 import os
 import logging
+import urllib
 from flask import request
 from flask import Response
 import jwt
@@ -9,11 +10,11 @@ from dotenv import load_dotenv
 from app import app
 load_dotenv()
 
-ODOO_LOGIN = os.getenv("LOGIN")
-ODOO_PASSWORD = os.getenv("PASSWORD")
-ODOO_DB = os.getenv("DB")
-ODOO_HOST = os.getenv("HOST")
-ODOO_PORT = os.getenv("PORT")
+ODOO_LOGIN = os.getenv("ODOO_LOGIN")
+ODOO_PASSWORD = os.getenv("ODOO_PASSWORD")
+ODOO_DB = os.getenv("ODOO_DB")
+ODOO_HOST = os.getenv("ODOO_HOST")
+ODOO_PORT = os.getenv("ODOO_PORT")
 
 JWT_SECRET = os.getenv("SECRET")
 
@@ -33,12 +34,9 @@ lending_toOdoo_fields = {'project': 'name', 'name': 'contact_name',
 @app.route('/create/new/<string:record>', methods=["POST"])
 def create_new_entity(record):
     """ Create new entity which depends on request record variable """
-    # try to login to odoo
-    try:
-        odoo = odoorpc.ODOO(ODOO_HOST, protocol='jsonrpc', port=ODOO_PORT)
-        odoo.login(ODOO_DB, login=ODOO_LOGIN, password=ODOO_PASSWORD)
-    except odoorpc.error.RPCError:
-        logging.warning("Can't login successfully to odoo")
+    odoo = odoo_login(ODOO_HOST, ODOO_PORT, ODOO_DB, ODOO_LOGIN, ODOO_PASSWORD)
+    if not odoo:
+        logging.warning("Can't establish connection to Odoo")
         return Response(status=500)
 
     logging.info("Get request to create new %s", record)
@@ -49,7 +47,6 @@ def create_new_entity(record):
     odoo_env = {'contact': odoo.env['res.partner'],
                 'lead': odoo.env['crm.lead']}
     if not token:
-        print("Token doesn't exist")
         logging.warning("Token doesn't exist in request data")
         return Response(status=401)
     elif token:
@@ -81,13 +78,31 @@ def create_new_entity(record):
                 except KeyError:
                     logging.warning("Key error while redefining fields from leads to contanct")
                 
-                print("total fields if contact", odoo_fields)
                 current_env.create(odoo_fields)
             elif current_env == odoo.env['crm.lead']:
-                print("total fields if crm.lead", odoo_fields)
                 current_env.create(odoo_fields)
         except odoorpc.error.RPCError as error:
             logging.warning("Odoo rpc error! Error: %s", error)
             return Response(status=500)
 
     return Response(status=201)
+
+
+def odoo_login(odoo_host, odoo_port, odoo_db, od_login, odoo_password):
+    """ Establish connection to Odoo & login to it """
+    # try to establish connection to odoo
+    try:
+        odoo = odoorpc.ODOO(odoo_host, protocol='jsonrpc', port=odoo_port)
+    except urllib.error.URLError:
+        logging.warning("Can't open connection to Odoo")
+        return None
+    # if connection established, try to login
+    if odoo:
+        try:
+            odoo.login(odoo_db, login=od_login, password=odoo_password)
+        except odoorpc.error.RPCError:
+            logging.warning("Odoo RPC error: Wrong Odoo password or login")
+            return None
+
+    return odoo
+    
