@@ -8,11 +8,11 @@ services:
     ports: 
     - "5000:5000"
     environment:
-    - LOGIN=
-    - PASSWORD=
-    - DB=
-    - HOST=
-    - PORT=
-    - SECRET=
+    - ODOO_LOGIN=
+    - ODOO_PASSWORD=
+    - ODOO_DB=
+    - ODOO_HOST=
+    - ODOO_PORT=
+    - ODOO_SECRET=
     entrypoint: ./boot.sh
     
