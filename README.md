@@ -11,8 +11,10 @@
    - Choose in Extra rights
      - Contact creation
 #### So, if these combination will not help you, try to add more rights to your Odoo user! Do it properly!
- 
-### Set Odoo credetials as environment variables in [docker-compose.yaml](./docker-compose.yaml)
+
+#### Due to [docker-compose.yaml](./docker-compose.yaml) build base image using this command:
+ `docker build -t odoo-middleware .`
+#### Set Odoo credetials as environment variables in [docker-compose.yaml](./docker-compose.yaml)
  - ODOO_LOGIN  
  - ODOO_PASSWORD 
  - ODOO_DB 
